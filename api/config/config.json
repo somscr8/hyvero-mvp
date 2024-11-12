@@ -1,0 +1,23 @@
+{
+  "development": {
+    "username": "root",
+    "password": "Hyvero@121",
+    "database": "hyvero",
+    "host": "127.0.0.1",
+    "dialect": "mysql"
+  },
+  "test": {
+    "username": "root",
+    "password": "Hyvero@121",
+    "database": "hyvero_test",
+    "host": "127.0.0.1",
+    "dialect": "mysql"
+  },
+  "production": {
+    "username": "root",
+    "password": "Hyvero@121",
+    "database": "hyvero_production",
+    "host": "127.0.0.1",
+    "dialect": "mysql"
+  }
+}
