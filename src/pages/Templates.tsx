@@ -5,13 +5,6 @@ function Templates() {
 
   const sections = [
     {
-      title: "Contracts & 3P Services",
-      tabs: [
-        { title: "Contracts Master", content: <ContractsMasterTab /> },
-        { title: "Intra-group", content: <IntraGroupTab /> },
-      ],
-    },
-    {
       title: "Entities in Scope",
       tabs: [
         { title: "Associated Entities", content: <AssociatedEntitiesTab /> },
@@ -20,8 +13,11 @@ function Templates() {
       ],
     },
     {
-      title: "Generate Report",
-      tabs: [{ title: "Generate Final Report", content: <GenerateFinalReportTab /> }],
+      title: "Contracts & 3P Services",
+      tabs: [
+        { title: "Contracts Master", content: <ContractsMasterTab /> },
+        { title: "Intra-group", content: <IntraGroupTab /> },
+      ],
     },
     {
       title: "ICT Service Providers",
@@ -30,6 +26,10 @@ function Templates() {
         { title: "Risk Assessment", content: <ICTRiskAssessmentTab /> },
         { title: "Vendor Master", content: <VendorMasterTab /> },
       ],
+    },
+    {
+      title: "Generate Report",
+      tabs: [{ title: "Generate Final Report", content: <GenerateFinalReportTab /> }],
     },
   ];
 
