@@ -8,20 +8,20 @@ const Template = sequelize.define('Template', {
     primaryKey: true,
     autoIncrement: true
   },
-  name: {
+  type: {
     type: DataTypes.STRING,
-    allowNull: false
+    allowNull: false,
+    validate: {
+      isIn: [['associated-entities', 'reporting-entity', 'risk-assessment', 'contracts-master', 'intra-group', 'ict-supply-chains', 'ict-risk-assessment', 'vendor-master']]
+    }
   },
-  description: {
-    type: DataTypes.TEXT
-  },
-  sections: {
+  data: {
     type: DataTypes.JSON,
     allowNull: false
   },
   status: {
-    type: DataTypes.ENUM('active', 'draft'),
-    defaultValue: 'draft'
+    type: DataTypes.ENUM('draft', 'active', 'archived'),
+    defaultValue: 'active'
   },
   createdById: {
     type: DataTypes.INTEGER,
@@ -30,7 +30,9 @@ const Template = sequelize.define('Template', {
       model: User,
       key: 'id'
     }
-  }
+  },
+  updatedAt: DataTypes.DATE,
+  createdAt: DataTypes.DATE
 });
 
 Template.belongsTo(User, { as: 'createdBy', foreignKey: 'createdById' });

@@ -1,44 +1,139 @@
 import React, { useState } from 'react';
+import { Plus, Edit, Trash2, FileText } from 'lucide-react';
+import { useAtom } from 'jotai';
+import { userAtom } from '../atoms/auth';
+import FormModal from '../components/FormModal';
 
 function Templates() {
+  const [user] = useAtom(userAtom);
   const [activeTab, setActiveTab] = useState(0);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [activeForm, setActiveForm] = useState('');
+  const [selectedItem, setSelectedItem] = useState(null);
 
   const sections = [
     {
       title: "Entities in Scope",
       tabs: [
-        { title: "Associated Entities", content: <AssociatedEntitiesTab /> },
-        { title: "Reporting Entity", content: <ReportingEntityTab /> },
-        { title: "Risk Assessment", content: <RiskAssessmentTab /> },
-      ],
+        { 
+          id: "associated-entities",
+          title: "Associated Entities",
+          data: [
+            { id: 1, name: "Entity A", type: "Subsidiary", country: "USA", lastUpdated: "2024-03-15" },
+            { id: 2, name: "Entity B", type: "Branch", country: "UK", lastUpdated: "2024-03-14" }
+          ]
+        },
+        { 
+          id: "reporting-entity",
+          title: "Reporting Entity",
+          data: [
+            { id: 1, name: "Main Corp", type: "Parent", authority: "FCA", country: "UK" },
+            { id: 2, name: "Sub Corp", type: "Subsidiary", authority: "SEC", country: "USA" }
+          ]
+        },
+        { 
+          id: "risk-assessment",
+          title: "Risk Assessment",
+          data: [
+            { id: 1, function: "Trading", criticality: "High", lastAssessment: "2024-03-10" },
+            { id: 2, function: "Settlement", criticality: "Medium", lastAssessment: "2024-03-09" }
+          ]
+        }
+      ]
     },
     {
       title: "Contracts & 3P Services",
       tabs: [
-        { title: "Contracts Master", content: <ContractsMasterTab /> },
-        { title: "Intra-group", content: <IntraGroupTab /> },
-      ],
+        { 
+          id: "contracts-master",
+          title: "Contracts Master",
+          data: [
+            { id: 1, reference: "CTR-001", provider: "Tech Corp", startDate: "2024-01-01", endDate: "2024-12-31" },
+            { id: 2, reference: "CTR-002", provider: "Cloud Inc", startDate: "2024-02-01", endDate: "2025-01-31" }
+          ]
+        },
+        { 
+          id: "intra-group",
+          title: "Intra-group",
+          data: [
+            { id: 1, reference: "IG-001", entity: "Subsidiary A", service: "IT Support" },
+            { id: 2, reference: "IG-002", entity: "Branch B", service: "Data Processing" }
+          ]
+        }
+      ]
     },
     {
       title: "ICT Service Providers",
       tabs: [
-        { title: "ICT Supply Chains", content: <ICTSupplyChainsTab /> },
-        { title: "Risk Assessment", content: <ICTRiskAssessmentTab /> },
-        { title: "Vendor Master", content: <VendorMasterTab /> },
-      ],
-    },
-    {
-      title: "Generate Report",
-      tabs: [{ title: "Generate Final Report", content: <GenerateFinalReportTab /> }],
-    },
+        { 
+          id: "ict-supply-chains",
+          title: "ICT Supply Chains",
+          data: [
+            { id: 1, provider: "Tech Solutions", service: "Cloud Storage", rank: "Tier 1" },
+            { id: 2, provider: "Data Corp", service: "Processing", rank: "Tier 2" }
+          ]
+        },
+        { 
+          id: "ict-risk-assessment",
+          title: "Risk Assessment",
+          data: [
+            { id: 1, provider: "Tech Solutions", risk: "Medium", lastAudit: "2024-02-15" },
+            { id: 2, provider: "Data Corp", risk: "Low", lastAudit: "2024-02-10" }
+          ]
+        },
+        { 
+          id: "vendor-master",
+          title: "Vendor Master",
+          data: [
+            { id: 1, name: "Tech Solutions", country: "USA", type: "Corporation" },
+            { id: 2, name: "Data Corp", country: "UK", type: "Limited" }
+          ]
+        }
+      ]
+    }
   ];
 
+  const handleCreate = (formId) => {
+    setSelectedItem(null);
+    setActiveForm(formId);
+    setIsModalOpen(true);
+  };
+
+  const handleEdit = (item, formId) => {
+    setSelectedItem(item);
+    setActiveForm(formId);
+    setIsModalOpen(true);
+  };
+
+  const handleDelete = async (id, formId) => {
+    if (window.confirm('Are you sure you want to delete this item?')) {
+      try {
+        // Implement delete API call
+        console.log(`Deleting item ${id} from ${formId}`);
+      } catch (error) {
+        console.error('Error deleting item:', error);
+      }
+    }
+  };
+
   return (
-    <div className="container mx-auto p-4">  {/* Container added here */}
+    <div className="container mx-auto p-4">
       <div className="flex flex-col md:flex-row">
         <Sidebar sections={sections} activeTab={activeTab} setActiveTab={setActiveTab} />
-        <ContentArea activeTab={activeTab} sections={sections} />
+        <ContentArea 
+          activeSection={sections[activeTab]} 
+          onCreate={handleCreate}
+          onEdit={handleEdit}
+          onDelete={handleDelete}
+        />
       </div>
+
+      <FormModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        formId={activeForm}
+        item={selectedItem}
+      />
     </div>
   );
 }
@@ -50,7 +145,9 @@ const Sidebar = ({ sections, activeTab, setActiveTab }) => (
       {sections.map((section, index) => (
         <button
           key={index}
-          className={`w-full text-left px-4 py-2 rounded-lg font-medium text-gray-700 ${activeTab === index ? 'bg-blue-600 text-white' : 'hover:bg-gray-200'}`}
+          className={`w-full text-left px-4 py-2 rounded-lg font-medium text-gray-700 ${
+            activeTab === index ? 'bg-primary-600 text-white' : 'hover:bg-gray-200'
+          }`}
           onClick={() => setActiveTab(index)}
         >
           {section.title}
@@ -60,273 +157,122 @@ const Sidebar = ({ sections, activeTab, setActiveTab }) => (
   </div>
 );
 
-const ContentArea = ({ activeTab, sections }) => (
-  <div className="w-full md:w-3/4 p-4">
-    <h2 className="text-lg md:text-xl font-semibold mb-2">{sections[activeTab].title}</h2>
-    <HorizontalTabs tabs={sections[activeTab].tabs} />
-  </div>
-);
-
-const HorizontalTabs = ({ tabs }) => {
+const ContentArea = ({ activeSection, onCreate, onEdit, onDelete }) => {
   const [activeSubTab, setActiveSubTab] = useState(0);
 
-  return (
-    <div>
-      <div className="flex border-b border-gray-200 mb-4">
-        {tabs.map((tab, index) => (
-          <button
-            key={index}
-            className={`px-4 py-2 text-sm font-medium ${activeSubTab === index ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-600'}`}
-            onClick={() => setActiveSubTab(index)}
-          >
-            {tab.title}
-          </button>
-        ))}
+  // Add null checks and default values
+  if (!activeSection?.tabs?.length) {
+    return (
+      <div className="w-full md:w-3/4 p-4">
+        <div className="text-center text-gray-500">No data available</div>
       </div>
-      <div className="w-full md:w-4/4 p-4 h-[720px] overflow-y-auto">{tabs[activeSubTab].content}</div>
+    );
+  }
+
+  const activeTab = activeSection.tabs[activeSubTab] || activeSection.tabs[0];
+  const tableData = activeTab?.data || [];
+
+  if (!tableData.length) {
+    return (
+      <div className="w-full md:w-3/4 p-4">
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="text-xl font-semibold">{activeSection.title}</h2>
+          <button
+            onClick={() => onCreate(activeTab.id)}
+            className="inline-flex items-center px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700"
+          >
+            <Plus className="w-5 h-5 mr-2" />
+            Create New
+          </button>
+        </div>
+        <div className="text-center text-gray-500 mt-8">No entries found</div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="w-full md:w-3/4 p-4">
+      <div className="flex justify-between items-center mb-6">
+        <h2 className="text-xl font-semibold">{activeSection.title}</h2>
+        <button
+          onClick={() => onCreate(activeTab.id)}
+          className="inline-flex items-center px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700"
+        >
+          <Plus className="w-5 h-5 mr-2" />
+          Create New
+        </button>
+      </div>
+
+      <div className="mb-6">
+        <div className="flex border-b border-gray-200">
+          {activeSection.tabs.map((tab, index) => (
+            <button
+              key={index}
+              className={`px-4 py-2 text-sm font-medium ${
+                activeSubTab === index
+                  ? 'text-primary-600 border-b-2 border-primary-600'
+                  : 'text-gray-600 hover:text-gray-800'
+              }`}
+              onClick={() => setActiveSubTab(index)}
+            >
+              {tab.title}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="bg-white rounded-lg shadow">
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50">
+              <tr>
+                {Object.keys(tableData[0] || {}).map((key) => (
+                  key !== 'id' && (
+                    <th
+                      key={key}
+                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                    >
+                      {key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}
+                    </th>
+                  )
+                ))}
+                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Actions
+                </th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {tableData.map((item) => (
+                <tr key={item.id} className="hover:bg-gray-50">
+                  {Object.entries(item).map(([key, value]) => (
+                    key !== 'id' && (
+                      <td key={key} className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {value}
+                      </td>
+                    )
+                  ))}
+                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                    <button
+                      onClick={() => onEdit(item, activeTab.id)}
+                      className="text-primary-600 hover:text-primary-900 mr-3"
+                    >
+                      <Edit className="w-5 h-5" />
+                    </button>
+                    <button
+                      onClick={() => onDelete(item.id, activeTab.id)}
+                      className="text-red-600 hover:text-red-900"
+                    >
+                      <Trash2 className="w-5 h-5" />
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
     </div>
   );
 };
-
-// Contracts Master Tab
-const ContractsMasterTab = () => (
-  <form>
-    {[
-      { label: "Annual expense or estimated cost of the contractual arrangement for the past year", type: "text" },
-      { label: "Contractual arrangement reference number", type: "text" },
-      { label: "Country of provision of the ICT services", type: "list", options: ["value 1", "value 2", "value 3"] },
-      { label: "Country of the governing law of the contractual arrangement", type: "list", options: ["value 1", "value 2", "value 3"] },
-      { label: "Currency of the amount reported in RT.02.01.0050", type: "list", options: ["value 1", "value 2", "value 3"] },
-      { label: "End date of the contractual arrangement", type: "text" },
-      { label: "Function identifier", type: "text" },
-      { label: "Identification code of the ICT third-party service provider", type: "text" },
-      { label: "LEI of the entity making use of the ICT service(s)", type: "list", options: ["value 1", "value 2", "value 3"] },
-      { label: "LEI of the entity signing the contractual arrangement", type: "text" },
-      { label: "Level of reliance on the ICT service supporting the critical or important function.", type: "text" },
-      { label: "Location of management of the data (processing)", type: "text" },
-      { label: "Location of the data at rest (storage)", type: "text" },
-      { label: "Notice period for the financial entity making use of the ICT service(s)", type: "text" },
-      { label: "Notice period for the ICT third-party service provider", type: "text" },
-      { label: "Overarching contractual arrangement reference number", type: "text" },
-      { label: "Reason of the termination or ending of the contractual arrangement", type: "text" },
-      { label: "Sensitiveness of the data stored by the ICT third-party service provider", type: "text" },
-      { label: "Start date of the contractual arrangement", type: "text" },
-      { label: "Storage of data", type: "text" },
-      { label: "Type of code to identify the ICT third-party service provider", type: "text" },
-      { label: "Type of contractual arrangement", type: "list", options: ["value 1", "value 2", "value 3"] },
-      { label: "Type of ICT services", type: "text" },
-    ].map((input, index) => (
-      <div className="mb-4" key={index}>
-        <label className="block text-sm font-medium">{input.label}</label>
-        {input.type === "list" ? (
-          <select className="mt-2 p-2 border border-gray-300 rounded w-full">
-            {input.options?.map((option, i) => (
-              <option key={i} value={option}>{option}</option>
-            ))}
-          </select>
-        ) : (
-          <input type={input.type} className="mt-2 p-2 border border-gray-300 rounded w-full" />
-        )}
-      </div>
-    ))}
-  </form>
-);
-
-// Intra-group Tab
-const IntraGroupTab = () => (
-  <form>
-    {[
-      { label: "Contractual arrangement linked to the contractual arrangement referred in RT.02.03.0010", type: "text" },
-      { label: "Contractual arrangement reference number", type: "text" },
-      { label: "Identification code of the branch", type: "text" },
-      { label: "LEI of the entity making use of the ICT service(s)", type: "text" },
-      { label: "LEI of the entity providing ICT services", type: "text" },
-      { label: "Nature of the entity making use of the ICT service(s)", type: "text" },
-    ].map((input, index) => (
-      <div className="mb-4" key={index}>
-        <label className="block text-sm font-medium">{input.label}</label>
-        <input type={input.type} className="mt-2 p-2 border border-gray-300 rounded w-full" />
-      </div>
-    ))}
-  </form>
-);
-
-// Associated Entities Tab
-const AssociatedEntitiesTab = () => (
-  <form>
-    {[
-      { label: "Country of the branch", type: "list", options: ["value 1", "value 2", "value 3"] },
-      { label: "Country of the entity", type: "list", options: ["value 1", "value 2", "value 3"] },
-      { label: "Currency", type: "list", options: ["value 1", "value 2", "value 3"] },
-      { label: "Date of deletion in the Register of information", type: "date" },
-      { label: "Date of integration in the Register of information", type: "date" },
-      { label: "Date of last update", type: "date" },
-      { label: "Hierarchy of the entity within the group (where applicable)", type: "list", options: ["value 1", "value 2", "value 3"] },
-      { label: "Identification code of the branch", type: "text" },
-      { label: "LEI of the direct parent undertaking of the entity", type: "text" },
-      { label: "LEI of the entity", type: "text" },
-      { label: "LEI of the financial entity head office of the branch", type: "text" },
-      { label: "Name of the branch", type: "text" },
-      { label: "Name of the entity", type: "text" },
-      { label: "Type of entity", type: "list", options: ["value 1", "value 2", "value 3"] },
-      { label: "Value of total assets - of the financial entity", type: "text" },
-    ].map((input, index) => (
-      <div className="mb-4" key={index}>
-        <label className="block text-sm font-medium">{input.label}</label>
-        {input.type === "list" ? (
-          <select className="mt-2 p-2 border border-gray-300 rounded w-full">
-            {input.options?.map((option, i) => (
-              <option key={i} value={option}>{option}</option>
-            ))}
-          </select>
-        ) : input.type === "date" ? (
-          <input type={input.type} className="mt-2 p-2 border border-gray-300 rounded w-full" />
-        ) : (
-          <input type={input.type} className="mt-2 p-2 border border-gray-300 rounded w-full" />
-        )}
-      </div>
-    ))}
-  </form>
-);
-
-// Reporting Entity Tab
-const ReportingEntityTab = () => (
-  <form>
-    {[
-      { label: "Competent Authority", type: "text" },
-      { label: "Country of the entity", type: "list", options: ["value 1", "value 2", "value 3"] },
-      { label: "LEI of the entity maintaining the register of information", type: "text" },
-      { label: "Name of the entity", type: "text" },
-      { label: "Type of entity", type: "list", options: ["value 1", "value 2", "value 3"] },
-    ].map((input, index) => (
-      <div className="mb-4" key={index}>
-        <label className="block text-sm font-medium">{input.label}</label>
-        {input.type === "list" ? (
-          <select className="mt-2 p-2 border border-gray-300 rounded w-full">
-            {input.options?.map((option, i) => (
-              <option key={i} value={option}>{option}</option>
-            ))}
-          </select>
-        ) : (
-          <input type={input.type} className="mt-2 p-2 border border-gray-300 rounded w-full" />
-        )}
-      </div>
-    ))}
-  </form>
-);
-
-// Risk Assessment Tab
-const RiskAssessmentTab = () => (
-  <form>
-    {[
-      { label: "Criticality or importance assessment", type: "list", options: ["value 1", "value 2", "value 3"] },
-      { label: "Date of the last assessment of criticality or importance", type: "date" },
-      { label: "Function Identifier", type: "text" },
-      { label: "Function name", type: "text" },
-      { label: "Impact of discontinuing the function", type: "list", options: ["value 1", "value 2", "value 3"] },
-      { label: "LEI of the financial entity", type: "text" },
-      { label: "Licenced activity", type: "text" },
-      { label: "Reasons for criticality or importance", type: "text" },
-      { label: "Recovery point objective of the function", type: "text" },
-      { label: "Recovery time objective of the function", type: "text" },
-    ].map((input, index) => (
-      <div className="mb-4" key={index}>
-        <label className="block text-sm font-medium">{input.label}</label>
-        {input.type === "list" ? (
-          <select className="mt-2 p-2 border border-gray-300 rounded w-full">
-            {input.options?.map((option, i) => (
-              <option key={i} value={option}>{option}</option>
-            ))}
-          </select>
-        ) : input.type === "date" ? (
-          <input type={input.type} className="mt-2 p-2 border border-gray-300 rounded w-full" />
-        ) : (
-          <input type={input.type} className="mt-2 p-2 border border-gray-300 rounded w-full" />
-        )}
-      </div>
-    ))}
-  </form>
-);
-
-// Generate Final Report Tab
-const GenerateFinalReportTab = () => (
-  <form>
-    {[
-      { label: "Date of the reporting", type: "date" },
-    ].map((input, index) => (
-      <div className="mb-4" key={index}>
-        <label className="block text-sm font-medium">{input.label}</label>
-        <input type={input.type} className="mt-2 p-2 border border-gray-300 rounded w-full" />
-      </div>
-    ))}
-  </form>
-);
-
-// ICT Supply Chains Tab
-const ICTSupplyChainsTab = () => (
-  <form>
-    {[
-      { label: "Contractual arrangement reference number", type: "text" },
-      { label: "Identification code of the ICT third-party service provider", type: "text" },
-      { label: "Identification code of the recipient of sub-contracted ICT services", type: "text" },
-      { label: "Rank", type: "text" },
-      { label: "Type of code to identify the ICT third-party service provider", type: "text" },
-      { label: "Type of code to identify the recipient of sub-contracted ICT services", type: "text" },
-      { label: "Type of ICT services", type: "text" },
-    ].map((input, index) => (
-      <div className="mb-4" key={index}>
-        <label className="block text-sm font-medium">{input.label}</label>
-        <input type={input.type} className="mt-2 p-2 border border-gray-300 rounded w-full" />
-      </div>
-    ))}
-  </form>
-);
-
-// ICT Risk Assessment Tab
-const ICTRiskAssessmentTab = () => (
-  <form>
-    {[
-      { label: "Are there alternative ICT third-party service providers identified?", type: "text" },
-      { label: "Contractual arrangement reference number", type: "text" },
-      { label: "Date of the last audit on the ICT third-party service provider", type: "text" },
-      { label: "Existence of an exit plan", type: "text" },
-      { label: "Identification code of the ICT third-party service provider", type: "text" },
-      { label: "Identification of alternative ICT TPP", type: "text" },
-      { label: "Impact of discontinuing the ICT services", type: "text" },
-      { label: "Possibility of reintegration of the contracted ICT service", type: "text" },
-      { label: "Reason if the ICT third-party service provider is considered not substitutable or difficult to be substitutable", type: "text" },
-      { label: "Substitutability of the ICT third-party service provider", type: "text" },
-      { label: "Type of code to identify the ICT third-party service provider", type: "text" },
-      { label: "Type of ICT services", type: "text" },
-    ].map((input, index) => (
-      <div className="mb-4" key={index}>
-        <label className="block text-sm font-medium">{input.label}</label>
-        <input type={input.type} className="mt-2 p-2 border border-gray-300 rounded w-full" />
-      </div>
-    ))}
-  </form>
-);
-
-// Vendor Master Tab
-const VendorMasterTab = () => (
-  <form>
-    {[
-      { label: "Contractual arrangement reference number", type: "text" },
-      { label: "Country of the ICT third-party service provider’s headquarters", type: "text" },
-      { label: "Currency of the amount reported in RT.05.01.0070", type: "text" },
-      { label: "Identification code of ICT third-party service provider", type: "text" },
-      { label: "Identification code of the ICT third-party service provider’s ultimate parent undertaking", type: "text" },
-      { label: "Name of the ICT third-party service provider", type: "text" },
-      { label: "Total annual expense or estimated cost of the ICT third-party service provider", type: "text" },
-      { label: "Type of code to identify the ICT third-party service provider", type: "text" },
-      { label: "Type of person of the ICT third-party service provider", type: "text" },
-    ].map((input, index) => (
-      <div className="mb-4" key={index}>
-        <label className="block text-sm font-medium">{input.label}</label>
-        <input type={input.type} className="mt-2 p-2 border border-gray-300 rounded w-full" />
-      </div>
-    ))}
-  </form>
-);
 
 export default Templates;
