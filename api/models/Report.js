@@ -9,14 +9,6 @@ const Report = sequelize.define('Report', {
     primaryKey: true,
     autoIncrement: true
   },
-  templateId: {
-    type: DataTypes.INTEGER,
-    allowNull: false,
-    references: {
-      model: Template,
-      key: 'id'
-    }
-  },
   name: {
     type: DataTypes.STRING,
     allowNull: false

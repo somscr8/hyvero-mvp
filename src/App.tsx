@@ -1,3 +1,5 @@
+// src/App.tsx
+
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Layout from './components/Layout';
@@ -7,6 +9,7 @@ import Templates from './pages/Templates';
 import Reports from './pages/Reports';
 import Files from './pages/Files';
 import Users from './pages/Users';
+import ClearTables from './components/ClearTables'; // Import the ClearTables component
 import ErrorBoundary from './components/ErrorBoundary';
 
 function App() {
@@ -22,6 +25,7 @@ function App() {
             <Route path="reports" element={<Reports />} />
             <Route path="files" element={<Files />} />
             <Route path="users" element={<Users />} />
+            <Route path="cleartables" element={<ClearTables />} /> {/* New Route for ClearTables */}
           </Route>
         </Routes>
       </BrowserRouter>

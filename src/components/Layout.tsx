@@ -1,3 +1,5 @@
+// src/components/Layout.tsx
+
 import React from 'react';
 import { Link, Outlet, useLocation, Navigate } from 'react-router-dom';
 import { useAtom } from 'jotai';
@@ -7,7 +9,8 @@ import {
   Upload, 
   Users, 
   FileSpreadsheet,
-  LogOut 
+  LogOut,
+  Trash2 // Import Trash icon for 'Clear Tables' link
 } from 'lucide-react';
 import { userAtom } from '../atoms/auth';
 
@@ -25,6 +28,7 @@ function Layout() {
     { name: 'Reports', href: '/reports', icon: FileSpreadsheet },
     { name: 'Files', href: '/files', icon: Upload },
     ...(user.role === 'admin' ? [{ name: 'Users', href: '/users', icon: Users }] : []),
+    ...(user.role === 'admin' ? [{ name: 'Data Management', href: '/cleartables', icon: Trash2 }] : []), // Add Clear Tables for admins
   ];
 
   const handleLogout = () => {

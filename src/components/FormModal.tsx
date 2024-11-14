@@ -2,6 +2,8 @@ import React from 'react';
 import { X } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { formFields, dropdownOptions } from '../lib/formFields';
+import { useAtom } from 'jotai';
+import { userAtom } from '../atoms/auth';
 
 function FormModal({ isOpen, onClose, formId, item, onSubmit }) {
   const fields = formFields[formId];
@@ -9,11 +11,23 @@ function FormModal({ isOpen, onClose, formId, item, onSubmit }) {
     defaultValues: item?.data || {}
   });
 
+  // Access the logged-in user
+  const [user] = useAtom(userAtom);
+
   if (!isOpen || !fields) return null;
 
   const handleFormSubmit = async (data) => {
     try {
-      await onSubmit(data);
+      // Add the createdById to the form data before submitting
+      const formData = { ...data, createdById: user?.id };
+      
+      // If userId is not available, show an error or handle as needed
+      if (!user?.id) {
+        console.error('User ID is missing. Cannot submit form.');
+        return;
+      }
+
+      await onSubmit(formData);
       reset();
     } catch (error) {
       console.error('Error submitting form:', error);

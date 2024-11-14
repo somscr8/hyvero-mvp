@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Plus, Edit, Trash2 } from 'lucide-react';
 import { useAtom } from 'jotai';
 import { userAtom } from '../atoms/auth';
@@ -10,7 +10,7 @@ function Templates() {
   const [activeTab, setActiveTab] = useState(0);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [activeForm, setActiveForm] = useState('');
-  const [selectedItem, setSelectedItem] = useState(null);
+  const [selectedItem, setSelectedItem] = useState<any | null>(null);
   const [templates, setTemplates] = useState<Record<string, any[]>>({});
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -41,7 +41,8 @@ function Templates() {
     }
   ];
 
-  const loadTemplates = async (formId: string) => {
+  // Load templates function
+  const loadTemplates = useCallback(async (formId: string) => {
     try {
       setLoading(true);
       const response = await fetch(`http://localhost:5000/api/templates/${formId}`);
@@ -60,7 +61,7 @@ function Templates() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     const currentSection = sections[activeTab];
@@ -69,7 +70,7 @@ function Templates() {
         loadTemplates(tab.id);
       });
     }
-  }, [activeTab]);
+  }, [activeTab, loadTemplates]);
 
   const handleCreate = (formId: string) => {
     setSelectedItem(null);
@@ -93,7 +94,7 @@ function Templates() {
           const errorData = await response.json();
           throw new Error(errorData.message || 'Failed to delete template');
         }
-        await loadTemplates(formId);
+        await loadTemplates(formId); // Reload templates after delete
       } catch (error) {
         console.error('Error deleting template:', error);
         setError(`Failed to delete template: ${error.message}`);
@@ -105,7 +106,7 @@ function Templates() {
     try {
       const url = `http://localhost:5000/api/templates/${formId}${selectedItem ? `/${selectedItem.id}` : ''}`;
       const method = selectedItem ? 'PUT' : 'POST';
-      
+
       const response = await fetch(url, {
         method,
         headers: {
@@ -118,9 +119,9 @@ function Templates() {
         const errorData = await response.json();
         throw new Error(errorData.message || 'Failed to save template');
       }
-      
-      await loadTemplates(formId);
-      setIsModalOpen(false);
+
+      await loadTemplates(formId);  // Reload templates after saving
+      setIsModalOpen(false);  // Close modal after submission
     } catch (error) {
       console.error('Error saving template:', error);
       setError(`Failed to save template: ${error.message}`);
@@ -131,8 +132,8 @@ function Templates() {
     <div className="container mx-auto p-4">
       <div className="flex flex-col md:flex-row">
         <Sidebar sections={sections} activeTab={activeTab} setActiveTab={setActiveTab} />
-        <ContentArea 
-          activeSection={sections[activeTab]} 
+        <ContentArea
+          activeSection={sections[activeTab]}
           templates={templates}
           loading={loading}
           onCreate={handleCreate}
@@ -150,9 +151,9 @@ function Templates() {
       />
 
       {error && (
-        <ErrorMessage 
-          message={error} 
-          onClose={() => setError(null)} 
+        <ErrorMessage
+          message={error}
+          onClose={() => setError(null)}
         />
       )}
     </div>
@@ -166,9 +167,7 @@ const Sidebar = ({ sections, activeTab, setActiveTab }) => (
       {sections.map((section, index) => (
         <button
           key={index}
-          className={`w-full text-left px-4 py-2 rounded-lg font-medium text-gray-700 ${
-            activeTab === index ? 'bg-primary-600 text-white' : 'hover:bg-gray-200'
-          }`}
+          className={`w-full text-left px-4 py-2 rounded-lg font-medium text-gray-700 ${activeTab === index ? 'bg-primary-600 text-white' : 'hover:bg-gray-200'}`}
           onClick={() => setActiveTab(index)}
         >
           {section.title}
@@ -210,11 +209,7 @@ const ContentArea = ({ activeSection, templates, loading, onCreate, onEdit, onDe
           {activeSection.tabs.map((tab, index) => (
             <button
               key={index}
-              className={`px-4 py-2 text-sm font-medium ${
-                activeSubTab === index
-                  ? 'text-primary-600 border-b-2 border-primary-600'
-                  : 'text-gray-600 hover:text-gray-800'
-              }`}
+              className={`px-4 py-2 text-sm font-medium ${activeSubTab === index ? 'text-primary-600 border-b-2 border-primary-600' : 'text-gray-600 hover:text-gray-800'}`}
               onClick={() => setActiveSubTab(index)}
             >
               {tab.title}
@@ -234,40 +229,23 @@ const ContentArea = ({ activeSection, templates, loading, onCreate, onEdit, onDe
         ) : (
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
+              <thead>
                 <tr>
-                  {Object.keys(tableData[0].data).map((key) => (
-                    <th
-                      key={key}
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                    >
-                      {key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}
-                    </th>
-                  ))}
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Actions
-                  </th>
+                  <th className="px-6 py-3 text-left text-sm font-medium text-gray-500">ID</th>
+                  <th className="px-6 py-3 text-left text-sm font-medium text-gray-500">Name</th>
+                  <th className="px-6 py-3 text-left text-sm font-medium text-gray-500">Actions</th>
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {tableData.map((item) => (
-                  <tr key={item.id} className="hover:bg-gray-50">
-                    {Object.entries(item.data).map(([key, value]) => (
-                      <td key={key} className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {value as string}
-                      </td>
-                    ))}
-                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                      <button
-                        onClick={() => onEdit(item, activeTab.id)}
-                        className="text-primary-600 hover:text-primary-900 mr-3"
-                      >
+              <tbody className="divide-y divide-gray-200">
+                {tableData.map(item => (
+                  <tr key={item.id}>
+                    <td className="px-6 py-4 text-sm text-gray-500">{item.id}</td>
+                    <td className="px-6 py-4 text-sm text-gray-500">{item.name}</td>
+                    <td className="px-6 py-4 text-sm text-gray-500">
+                      <button onClick={() => onEdit(item, activeTab.id)} className="text-primary-600 hover:text-primary-800 mr-3">
                         <Edit className="w-5 h-5" />
                       </button>
-                      <button
-                        onClick={() => onDelete(item.id, activeTab.id)}
-                        className="text-red-600 hover:text-red-900"
-                      >
+                      <button onClick={() => onDelete(item.id, activeTab.id)} className="text-red-600 hover:text-red-800">
                         <Trash2 className="w-5 h-5" />
                       </button>
                     </td>

@@ -75,7 +75,7 @@ export class HyveroDB extends Dexie {
     this.on('ready', async () => {
       const userCount = await this.users.count();
       if (userCount === 0) {
-        await this.users.add({
+        const adminId = await this.users.add({
           email: 'admin@hyvero.ai',
           password: 'admin123',
           role: 'admin',
@@ -83,9 +83,35 @@ export class HyveroDB extends Dexie {
           createdAt: new Date(),
           status: 'active'
         });
+
+        console.log(`Admin user created with ID: ${adminId}`);
       }
     });
   }
+
+  // Method to clear the users table
+  clearUsers = async () => {
+    await this.users.clear();
+    console.log('Users table cleared');
+  };
+
+  // Method to clear the templates table
+  clearTemplates = async () => {
+    await this.templates.clear();
+    console.log('Templates table cleared');
+  };
+
+  // Method to clear the reports table
+  clearReports = async () => {
+    await this.reports.clear();
+    console.log('Reports table cleared');
+  };
+
+  // Method to clear the files table
+  clearFiles = async () => {
+    await this.files.clear();
+    console.log('Files table cleared');
+  };
 }
 
 export const db = new HyveroDB();
