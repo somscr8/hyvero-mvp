@@ -3,25 +3,17 @@ import { X } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { formFields, dropdownOptions } from '../lib/formFields';
 
-function FormModal({ isOpen, onClose, formId, item }) {
+function FormModal({ isOpen, onClose, formId, item, onSubmit }) {
   const fields = formFields[formId];
   const { register, handleSubmit, formState: { errors }, reset } = useForm({
-    defaultValues: item || {}
+    defaultValues: item?.data || {}
   });
 
   if (!isOpen || !fields) return null;
 
-  const onSubmit = async (data) => {
+  const handleFormSubmit = async (data) => {
     try {
-      const response = await fetch(`/api/templates/${formId}${item ? `/${item.id}` : ''}`, {
-        method: item ? 'PUT' : 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data)
-      });
-
-      if (!response.ok) throw new Error('Failed to save data');
-
-      onClose();
+      await onSubmit(data);
       reset();
     } catch (error) {
       console.error('Error submitting form:', error);
@@ -76,7 +68,7 @@ function FormModal({ isOpen, onClose, formId, item }) {
             </button>
           </div>
 
-          <form onSubmit={handleSubmit(onSubmit)} className="p-4">
+          <form onSubmit={handleSubmit(handleFormSubmit)} className="p-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {fields.map((field) => (
                 <div key={field.name}>

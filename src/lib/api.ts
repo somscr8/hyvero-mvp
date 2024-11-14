@@ -38,7 +38,10 @@ export const templateApi = {
     });
   },
 
-  async getTemplates() {
+  async getTemplates(type?: string) {
+    if (type) {
+      return db.templates.where('type').equals(type).toArray();
+    }
     return db.templates.toArray();
   },
 
@@ -48,6 +51,10 @@ export const templateApi = {
 
   async updateTemplate(id: number, data: Partial<Template>) {
     return db.templates.update(id, data);
+  },
+
+  async deleteTemplate(id: number) {
+    return db.templates.delete(id);
   }
 };
 
@@ -77,7 +84,7 @@ export const reportApi = {
     const total = reports.length;
     const completed = reports.filter(r => r.status === 'completed').length;
     const inProgress = total - completed;
-    const averageProgress = reports.reduce((acc, r) => acc + r.progress, 0) / total;
+    const averageProgress = reports.reduce((acc, r) => acc + r.progress, 0) / total || 0;
 
     return { total, completed, inProgress, averageProgress };
   }

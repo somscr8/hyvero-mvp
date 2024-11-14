@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
-import { Plus, Edit, Trash2, FileText } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Plus, Edit, Trash2 } from 'lucide-react';
 import { useAtom } from 'jotai';
 import { userAtom } from '../atoms/auth';
 import FormModal from '../components/FormModal';
+import ErrorMessage from '../components/ErrorMessage';
 
 function Templates() {
   const [user] = useAtom(userAtom);
@@ -10,109 +11,119 @@ function Templates() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [activeForm, setActiveForm] = useState('');
   const [selectedItem, setSelectedItem] = useState(null);
+  const [templates, setTemplates] = useState<Record<string, any[]>>({});
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
 
   const sections = [
     {
       title: "Entities in Scope",
       tabs: [
-        { 
-          id: "associated-entities",
-          title: "Associated Entities",
-          data: [
-            { id: 1, name: "Entity A", type: "Subsidiary", country: "USA", lastUpdated: "2024-03-15" },
-            { id: 2, name: "Entity B", type: "Branch", country: "UK", lastUpdated: "2024-03-14" }
-          ]
-        },
-        { 
-          id: "reporting-entity",
-          title: "Reporting Entity",
-          data: [
-            { id: 1, name: "Main Corp", type: "Parent", authority: "FCA", country: "UK" },
-            { id: 2, name: "Sub Corp", type: "Subsidiary", authority: "SEC", country: "USA" }
-          ]
-        },
-        { 
-          id: "risk-assessment",
-          title: "Risk Assessment",
-          data: [
-            { id: 1, function: "Trading", criticality: "High", lastAssessment: "2024-03-10" },
-            { id: 2, function: "Settlement", criticality: "Medium", lastAssessment: "2024-03-09" }
-          ]
-        }
+        { id: "associated-entities", title: "Associated Entities" },
+        { id: "reporting-entity", title: "Reporting Entity" },
+        { id: "risk-assessment", title: "Risk Assessment" }
       ]
     },
     {
       title: "Contracts & 3P Services",
       tabs: [
-        { 
-          id: "contracts-master",
-          title: "Contracts Master",
-          data: [
-            { id: 1, reference: "CTR-001", provider: "Tech Corp", startDate: "2024-01-01", endDate: "2024-12-31" },
-            { id: 2, reference: "CTR-002", provider: "Cloud Inc", startDate: "2024-02-01", endDate: "2025-01-31" }
-          ]
-        },
-        { 
-          id: "intra-group",
-          title: "Intra-group",
-          data: [
-            { id: 1, reference: "IG-001", entity: "Subsidiary A", service: "IT Support" },
-            { id: 2, reference: "IG-002", entity: "Branch B", service: "Data Processing" }
-          ]
-        }
+        { id: "contracts-master", title: "Contracts Master" },
+        { id: "intra-group", title: "Intra-group" }
       ]
     },
     {
       title: "ICT Service Providers",
       tabs: [
-        { 
-          id: "ict-supply-chains",
-          title: "ICT Supply Chains",
-          data: [
-            { id: 1, provider: "Tech Solutions", service: "Cloud Storage", rank: "Tier 1" },
-            { id: 2, provider: "Data Corp", service: "Processing", rank: "Tier 2" }
-          ]
-        },
-        { 
-          id: "ict-risk-assessment",
-          title: "Risk Assessment",
-          data: [
-            { id: 1, provider: "Tech Solutions", risk: "Medium", lastAudit: "2024-02-15" },
-            { id: 2, provider: "Data Corp", risk: "Low", lastAudit: "2024-02-10" }
-          ]
-        },
-        { 
-          id: "vendor-master",
-          title: "Vendor Master",
-          data: [
-            { id: 1, name: "Tech Solutions", country: "USA", type: "Corporation" },
-            { id: 2, name: "Data Corp", country: "UK", type: "Limited" }
-          ]
-        }
+        { id: "ict-supply-chains", title: "ICT Supply Chains" },
+        { id: "ict-risk-assessment", title: "Risk Assessment" },
+        { id: "vendor-master", title: "Vendor Master" }
       ]
     }
   ];
 
-  const handleCreate = (formId) => {
+  const loadTemplates = async (formId: string) => {
+    try {
+      setLoading(true);
+      const response = await fetch(`http://localhost:5000/api/templates/${formId}`);
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to fetch templates');
+      }
+      const data = await response.json();
+      setTemplates(prev => ({
+        ...prev,
+        [formId]: data
+      }));
+    } catch (error) {
+      console.error('Error loading templates:', error);
+      setError(`Failed to load templates: ${error.message}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    const currentSection = sections[activeTab];
+    if (currentSection) {
+      currentSection.tabs.forEach(tab => {
+        loadTemplates(tab.id);
+      });
+    }
+  }, [activeTab]);
+
+  const handleCreate = (formId: string) => {
     setSelectedItem(null);
     setActiveForm(formId);
     setIsModalOpen(true);
   };
 
-  const handleEdit = (item, formId) => {
+  const handleEdit = (item: any, formId: string) => {
     setSelectedItem(item);
     setActiveForm(formId);
     setIsModalOpen(true);
   };
 
-  const handleDelete = async (id, formId) => {
+  const handleDelete = async (id: number, formId: string) => {
     if (window.confirm('Are you sure you want to delete this item?')) {
       try {
-        // Implement delete API call
-        console.log(`Deleting item ${id} from ${formId}`);
+        const response = await fetch(`http://localhost:5000/api/templates/${formId}/${id}`, {
+          method: 'DELETE'
+        });
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.message || 'Failed to delete template');
+        }
+        await loadTemplates(formId);
       } catch (error) {
-        console.error('Error deleting item:', error);
+        console.error('Error deleting template:', error);
+        setError(`Failed to delete template: ${error.message}`);
       }
+    }
+  };
+
+  const handleFormSubmit = async (formId: string, data: any) => {
+    try {
+      const url = `http://localhost:5000/api/templates/${formId}${selectedItem ? `/${selectedItem.id}` : ''}`;
+      const method = selectedItem ? 'PUT' : 'POST';
+      
+      const response = await fetch(url, {
+        method,
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(data)
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to save template');
+      }
+      
+      await loadTemplates(formId);
+      setIsModalOpen(false);
+    } catch (error) {
+      console.error('Error saving template:', error);
+      setError(`Failed to save template: ${error.message}`);
     }
   };
 
@@ -122,6 +133,8 @@ function Templates() {
         <Sidebar sections={sections} activeTab={activeTab} setActiveTab={setActiveTab} />
         <ContentArea 
           activeSection={sections[activeTab]} 
+          templates={templates}
+          loading={loading}
           onCreate={handleCreate}
           onEdit={handleEdit}
           onDelete={handleDelete}
@@ -133,7 +146,15 @@ function Templates() {
         onClose={() => setIsModalOpen(false)}
         formId={activeForm}
         item={selectedItem}
+        onSubmit={(data) => handleFormSubmit(activeForm, data)}
       />
+
+      {error && (
+        <ErrorMessage 
+          message={error} 
+          onClose={() => setError(null)} 
+        />
+      )}
     </div>
   );
 }
@@ -157,10 +178,9 @@ const Sidebar = ({ sections, activeTab, setActiveTab }) => (
   </div>
 );
 
-const ContentArea = ({ activeSection, onCreate, onEdit, onDelete }) => {
+const ContentArea = ({ activeSection, templates, loading, onCreate, onEdit, onDelete }) => {
   const [activeSubTab, setActiveSubTab] = useState(0);
 
-  // Add null checks and default values
   if (!activeSection?.tabs?.length) {
     return (
       <div className="w-full md:w-3/4 p-4">
@@ -169,26 +189,8 @@ const ContentArea = ({ activeSection, onCreate, onEdit, onDelete }) => {
     );
   }
 
-  const activeTab = activeSection.tabs[activeSubTab] || activeSection.tabs[0];
-  const tableData = activeTab?.data || [];
-
-  if (!tableData.length) {
-    return (
-      <div className="w-full md:w-3/4 p-4">
-        <div className="flex justify-between items-center mb-6">
-          <h2 className="text-xl font-semibold">{activeSection.title}</h2>
-          <button
-            onClick={() => onCreate(activeTab.id)}
-            className="inline-flex items-center px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700"
-          >
-            <Plus className="w-5 h-5 mr-2" />
-            Create New
-          </button>
-        </div>
-        <div className="text-center text-gray-500 mt-8">No entries found</div>
-      </div>
-    );
-  }
+  const activeTab = activeSection.tabs[activeSubTab];
+  const tableData = templates[activeTab.id] || [];
 
   return (
     <div className="w-full md:w-3/4 p-4">
@@ -222,54 +224,59 @@ const ContentArea = ({ activeSection, onCreate, onEdit, onDelete }) => {
       </div>
 
       <div className="bg-white rounded-lg shadow">
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                {Object.keys(tableData[0] || {}).map((key) => (
-                  key !== 'id' && (
+        {loading ? (
+          <div className="text-center py-8">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600 mx-auto"></div>
+            <p className="mt-2 text-gray-500">Loading templates...</p>
+          </div>
+        ) : tableData.length === 0 ? (
+          <div className="text-center py-8 text-gray-500">No entries found</div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  {Object.keys(tableData[0].data).map((key) => (
                     <th
                       key={key}
                       className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
                     >
                       {key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}
                     </th>
-                  )
-                ))}
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {tableData.map((item) => (
-                <tr key={item.id} className="hover:bg-gray-50">
-                  {Object.entries(item).map(([key, value]) => (
-                    key !== 'id' && (
-                      <td key={key} className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {value}
-                      </td>
-                    )
                   ))}
-                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                    <button
-                      onClick={() => onEdit(item, activeTab.id)}
-                      className="text-primary-600 hover:text-primary-900 mr-3"
-                    >
-                      <Edit className="w-5 h-5" />
-                    </button>
-                    <button
-                      onClick={() => onDelete(item.id, activeTab.id)}
-                      className="text-red-600 hover:text-red-900"
-                    >
-                      <Trash2 className="w-5 h-5" />
-                    </button>
-                  </td>
+                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Actions
+                  </th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {tableData.map((item) => (
+                  <tr key={item.id} className="hover:bg-gray-50">
+                    {Object.entries(item.data).map(([key, value]) => (
+                      <td key={key} className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {value as string}
+                      </td>
+                    ))}
+                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                      <button
+                        onClick={() => onEdit(item, activeTab.id)}
+                        className="text-primary-600 hover:text-primary-900 mr-3"
+                      >
+                        <Edit className="w-5 h-5" />
+                      </button>
+                      <button
+                        onClick={() => onDelete(item.id, activeTab.id)}
+                        className="text-red-600 hover:text-red-900"
+                      >
+                        <Trash2 className="w-5 h-5" />
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
     </div>
   );
