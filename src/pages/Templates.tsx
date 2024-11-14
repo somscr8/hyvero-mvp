@@ -103,10 +103,13 @@ function Templates() {
   };
 
   const handleFormSubmit = async (formId: string, data: any) => {
+    // Log the data being submitted to the console
+    console.log('Submitting data for form:', formId, data);
+  
     try {
       const url = `http://localhost:5000/api/templates/${formId}${selectedItem ? `/${selectedItem.id}` : ''}`;
       const method = selectedItem ? 'PUT' : 'POST';
-
+  
       const response = await fetch(url, {
         method,
         headers: {
@@ -114,20 +117,24 @@ function Templates() {
         },
         body: JSON.stringify(data)
       });
-
+  
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.message || 'Failed to save template');
       }
-
+  
+      // Log success response if needed
+      console.log('Successfully saved template:', data);
+  
       await loadTemplates(formId);  // Reload templates after saving
       setIsModalOpen(false);  // Close modal after submission
     } catch (error) {
       console.error('Error saving template:', error);
       setError(`Failed to save template: ${error.message}`);
+      setIsModalOpen(false);  // Ensure the modal closes on error
     }
   };
-
+  
   return (
     <div className="container mx-auto p-4">
       <div className="flex flex-col md:flex-row">
