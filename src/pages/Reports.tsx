@@ -1,47 +1,53 @@
 import React, { useState, useEffect } from 'react';
 import { FileSpreadsheet } from 'lucide-react';
-import { saveAs } from 'file-saver'; // Import FileSaver for downloading files
+import { saveAs } from 'file-saver';
 
 function Reports() {
-  const [reports, setReports] = useState<any[]>([]); // List to hold the generated reports
+  const [reports, setReports] = useState<any[]>([]);
 
-  // Fetch reports from the database (if needed)
   useEffect(() => {
-    const fetchReports = async () => {
-      // Fetch previously generated reports (using a method similar to Dexie or your storage)
-      // Example: const allReports = await db.reports.toArray();
-      // Replace with actual fetch logic if needed
-      setReports([]);
-    };
-    fetchReports();
+    // Load reports from local storage or database (if using Dexie or similar for persistent storage)
+    const savedReports = JSON.parse(localStorage.getItem('reports') || '[]');
+    setReports(savedReports);
   }, []);
 
-  // Function to generate and download the report
+  // Function to generate, rename, and download the report
   const generateReport = async () => {
-    // Path to the existing 'report.xlsx' file in the 'upload' folder
-    const filePath = '../../upload/report.xlsx'; // Path relative to the server's public folder
-
-    // Create a new file name based on the current date
-    const fileName = `ICR_Report_${new Date().toISOString().split('T')[0]}.xlsx`;
+    const filePath = '../../uploads/report.xlsx'; // Path to the source report file
+    const fileName = `ICT_Report_${new Date().toISOString().split('T')[0]}.xlsx`;
 
     try {
-      // Fetch the existing report file
+      // Fetch the report file
       const response = await fetch(filePath);
-      if (!response.ok) {
-        throw new Error('Failed to fetch the report file.');
-      }
+      if (!response.ok) throw new Error('Failed to fetch the report file.');
 
       const blob = await response.blob();
 
-      // Use FileSaver to save the file with the new name
+      // Save the file locally with the new name
       saveAs(blob, fileName);
 
-      // Optionally, save this report to the database or perform any other actions
-      // await db.reports.add({ name: fileName, generatedAt: new Date() });
+      // Update reports list
+      const newReport = { id: Date.now(), name: fileName, generatedAt: new Date() };
+      const updatedReports = [...reports, newReport];
+      setReports(updatedReports);
 
-      // Update the list of reports (if necessary)
-      // const allReports = await db.reports.toArray();
-      // setReports(allReports);
+      // Save reports list to local storage (or database if using persistent storage)
+      localStorage.setItem('reports', JSON.stringify(updatedReports));
+    } catch (error) {
+      console.error('Error downloading the report:', error);
+    }
+  };
+
+  // Function to handle downloading from the reports list
+  const downloadReport = async (reportName: string) => {
+    const filePath = `../../uploads/${reportName}`;
+
+    try {
+      const response = await fetch(filePath);
+      if (!response.ok) throw new Error('Failed to fetch the report file.');
+
+      const blob = await response.blob();
+      saveAs(blob, reportName);
     } catch (error) {
       console.error('Error downloading the report:', error);
     }
@@ -64,6 +70,7 @@ function Reports() {
         </button>
       </div>
 
+      {/* Reports List */}
       <div className="bg-white shadow overflow-hidden sm:rounded-lg">
         <div className="px-4 py-5 sm:px-6">
           <h3 className="text-lg leading-6 font-medium text-gray-900">Recent Reports</h3>
@@ -85,7 +92,10 @@ function Reports() {
                         </p>
                       </div>
                     </div>
-                    <button className="inline-flex items-center px-3 py-1 border border-transparent text-sm leading-5 font-medium rounded-md text-primary-600 bg-primary-100 hover:bg-primary-200">
+                    <button
+                      onClick={() => downloadReport(report.name)}
+                      className="inline-flex items-center px-3 py-1 border border-transparent text-sm leading-5 font-medium rounded-md text-primary-600 bg-primary-100 hover:bg-primary-200"
+                    >
                       Download
                     </button>
                   </div>

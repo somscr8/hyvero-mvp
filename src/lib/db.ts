@@ -12,6 +12,7 @@ export interface User {
 
 export interface Template {
   id?: number;
+  formId: string;  // Added formId property
   name: string;
   description: string;
   sections: TemplateSection[];
@@ -64,14 +65,13 @@ export class HyveroDB extends Dexie {
 
   constructor() {
     super('hyveroDB');
-    this.version(1).stores({
+    this.version(2).stores({
       users: '++id, email, role, status',
-      templates: '++id, createdBy, status',
+      templates: '++id, formId, createdBy, status', // Added formId index
       reports: '++id, templateId, createdBy, status',
       files: '++id, uploadedBy, uploadedAt'
     });
 
-    // Add default admin user if none exists
     this.on('ready', async () => {
       const userCount = await this.users.count();
       if (userCount === 0) {

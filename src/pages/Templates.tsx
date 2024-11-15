@@ -4,6 +4,8 @@ import { useAtom } from 'jotai';
 import { userAtom } from '../atoms/auth';
 import FormModal from '../components/FormModal';
 import ErrorMessage from '../components/ErrorMessage';
+import { db } from '../lib/db'; // Import Dexie instance
+
 
 function Templates() {
   const [user] = useAtom(userAtom);
@@ -45,15 +47,10 @@ function Templates() {
   const loadTemplates = useCallback(async (formId: string) => {
     try {
       setLoading(true);
-      const response = await fetch(`http://localhost:5000/api/templates/${formId}`);
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to fetch templates');
-      }
-      const data = await response.json();
-      setTemplates(prev => ({
+      const data = await db.templates.where("formId").equals(formId).toArray(); // Query by formId
+      setTemplates((prev) => ({
         ...prev,
-        [formId]: data
+        [formId]: data,
       }));
     } catch (error) {
       console.error('Error loading templates:', error);
@@ -87,14 +84,8 @@ function Templates() {
   const handleDelete = async (id: number, formId: string) => {
     if (window.confirm('Are you sure you want to delete this item?')) {
       try {
-        const response = await fetch(`http://localhost:5000/api/templates/${formId}/${id}`, {
-          method: 'DELETE'
-        });
-        if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.message || 'Failed to delete template');
-        }
-        await loadTemplates(formId); // Reload templates after delete
+        await db.templates.delete(id);
+        await loadTemplates(formId);
       } catch (error) {
         console.error('Error deleting template:', error);
         setError(`Failed to delete template: ${error.message}`);
@@ -103,38 +94,23 @@ function Templates() {
   };
 
   const handleFormSubmit = async (formId: string, data: any) => {
-    // Log the data being submitted to the console
-    console.log('Submitting data for form:', formId, data);
-  
     try {
-      const url = `http://localhost:5000/api/templates/${formId}${selectedItem ? `/${selectedItem.id}` : ''}`;
-      const method = selectedItem ? 'PUT' : 'POST';
-  
-      const response = await fetch(url, {
-        method,
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(data)
-      });
-  
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to save template');
+      if (selectedItem) {
+        // Update existing template
+        await db.templates.update(selectedItem.id, { ...data, formId });
+      } else {
+        // Add new template
+        await db.templates.add({ ...data, formId });
       }
-  
-      // Log success response if needed
-      console.log('Successfully saved template:', data);
-  
-      await loadTemplates(formId);  // Reload templates after saving
-      setIsModalOpen(false);  // Close modal after submission
+      await loadTemplates(formId);
+      setIsModalOpen(false);
     } catch (error) {
       console.error('Error saving template:', error);
       setError(`Failed to save template: ${error.message}`);
-      setIsModalOpen(false);  // Ensure the modal closes on error
+      setIsModalOpen(false);
     }
   };
-  
+
   return (
     <div className="container mx-auto p-4">
       <div className="flex flex-col md:flex-row">
